@@ -9,16 +9,81 @@
 </head>
 <body>
 <tw-story><noscript><tw-noscript>JavaScript needs to be enabled to play Untitled Story.</tw-noscript></noscript></tw-story>
-<tw-storydata name="Untitled Story" startnode="1" creator="Twine" creator-version="2.12.1" format="Harlowe" format-version="3.3.9" ifid="466C5381-A179-438A-B039-8FD4E82C976D" options="" tags="" zoom="1" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript"></script><tw-passagedata pid="1" name="Untitled Passage" tags="" position="900,350" size="100,100">※ 建議戴上耳機 開啟聲音閱讀
-[[開始閱讀-&gt;第一段]]
-&lt;audio id=&quot;gojo theme&quot; src=&quot;https://github.io&quot; loop preload=&quot;auto&quot;&gt;&lt;/audio&gt;
+<tw-storydata name="Untitled Story" startnode="1" creator="Twine" creator-version="2.12.1" format="Harlowe" format-version="3.3.9" ifid="466C5381-A179-438A-B039-8FD4E82C976D" options="" tags="" zoom="1" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript">window.bgmPlayer = new Audio();
+window.bgmPlayer.loop = true; // 預設循環播放
+window.bgmFadeTimer = null;
 
-</tw-passagedata><tw-passagedata pid="2" name="第一段" tags="" position="900,475" size="100,100">&lt;script&gt;
-  var a = document.getElementById(&#39;gojo theme&#39;);
-  if(a){ a.volume = 0; a.play().then(()=&gt;{ a.pause(); }).catch(()=&gt;{}); }
-&lt;/script&gt;
+// 內部音量漸變控制函數
+window._fadeAudio = function(targetVol, duration, callback) {
+  clearInterval(window.bgmFadeTimer);
+  const startVol = window.bgmPlayer.volume;
+  const diff = targetVol - startVol;
+  if (diff === 0 || duration <= 0) {
+    window.bgmPlayer.volume = targetVol;
+    if (callback) callback();
+    return;
+  }
+  const interval = 50; // 每 50 毫秒調整一次音量
+  const steps = duration / interval;
+  const stepVol = diff / steps;
+  let currentStep = 0;
 
-第三章 你說你他媽的是萊傲天？？？
+  window.bgmFadeTimer = setInterval(function() {
+    currentStep++;
+    let newVol = startVol + stepVol * currentStep;
+    newVol = Math.max(0, Math.min(1, newVol)); // 確保音量安全落在 0~1 之間
+    window.bgmPlayer.volume = newVol;
+
+    if (currentStep >= steps) {
+      clearInterval(window.bgmFadeTimer);
+      window.bgmPlayer.volume = targetVol;
+      if (callback) callback();
+    }
+  }, interval);
+};
+
+// 播放或換歌（預設淡入時間 2000 毫秒 = 2 秒，最大音量 1.0）
+window.playBGM = function(src, fadeTime = 2000, maxVol = 1.0) {
+  // 若已經在播放同一首歌，則不重新載入，直接確保音量淡入到目標值
+  if (window.bgmPlayer.getAttribute('data-src') === src && !window.bgmPlayer.paused) {
+    window._fadeAudio(maxVol, fadeTime);
+    return;
+  }
+
+  const startNewTrack = function() {
+    window.bgmPlayer.src = src;
+    window.bgmPlayer.setAttribute('data-src', src);
+    window.bgmPlayer.volume = 0; // 從無聲開始淡入
+    window.bgmPlayer.play().then(function() {
+      window._fadeAudio(maxVol, fadeTime);
+    }).catch(function(e) {
+      console.log("等待使用者互動後才能播放音樂:", e);
+    });
+  };
+
+  // 如果目前正在播別首歌，先花一半的時間淡出舊歌，再淡入新歌
+  if (!window.bgmPlayer.paused && window.bgmPlayer.getAttribute('data-src')) {
+    window._fadeAudio(0, fadeTime / 2, function() {
+      window.bgmPlayer.pause();
+      startNewTrack();
+    });
+  } else {
+    startNewTrack();
+  }
+};
+
+// 停止音樂（預設淡出時間 2000 毫秒 = 2 秒）
+window.stopBGM = function(fadeTime = 2000) {
+  if (!window.bgmPlayer.paused) {
+    window._fadeAudio(0, fadeTime, function() {
+      window.bgmPlayer.pause();
+      window.bgmPlayer.currentTime = 0;
+      window.bgmPlayer.removeAttribute('data-src');
+    });
+  }
+};
+</script><tw-passagedata pid="1" name="Untitled Passage" tags="" position="900,350" size="100,100">※ 建議戴上耳機 開啟聲音閱讀
+[[開始閱讀-&gt;第一段]]</tw-passagedata><tw-passagedata pid="2" name="第一段" tags="" position="900,475" size="100,100">第三章 你說你他媽的是萊傲天？？？
 時間經過了三天。
 這三天黑紅完全沒有找到自己的朋友 甚至熱狗堡都吃光了。
 不過其實也不完全是沒收穫的。
@@ -37,15 +102,7 @@
 這時一隻長得很像貓的”人”出現在怪物旁邊。
 而黑紅一眼就認出那個人。
 &lt;script&gt;
-  var a = document.getElementById(&#39;my-bgm&#39;);
-  if(a){
-    a.volume = 0;
-    a.play();
-    var fade = setInterval(function(){
-      if(a.volume &lt; 0.75){ a.volume = Math.min(a.volume + 0.05, 0.75); }
-      else { clearInterval(fade); }
-    }, 200);
-  }
+window.playBGM(&quot;gojotheme.mp3&quot;);
 &lt;/script&gt;
 黑紅：「科科洛？」
 「等等所以旁邊那個是溫迪嗎？」
@@ -188,6 +245,9 @@
 「理論上....理論上是每個人都有的能量....。」
 「但能不能....控制就是一回事了....。」
 說完黑紅也暈了過去。
+&lt;script&gt;
+window.stopBGM();
+&lt;/script&gt;
 過了一個小時後黑紅醒了。
 醒來的瞬間他差點嚇死因為科科洛跟溫迪正貼著觀察他。
 黑紅：「臥操！」
