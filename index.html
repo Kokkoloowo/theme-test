@@ -12,27 +12,25 @@
 <tw-storydata name="Untitled Story" startnode="1" creator="Twine" creator-version="2.12.1" format="Harlowe" format-version="3.3.9" ifid="466C5381-A179-438A-B039-8FD4E82C976D" options="" tags="" zoom="1" hidden><style role="stylesheet" id="twine-user-stylesheet" type="text/twine-css"></style><script role="script" id="twine-user-script" type="text/twine-javascript">window.bgmPlayer = new Audio();
 window.bgmPlayer.loop = true;
 window.bgmFadeTimer = null;
-window.currentBgmGroup = null;
 window.passageBgmTriggered = false;
 
-// 內部音量漸變控制函數
 window._fadeAudio = function(targetVol, duration, callback) {
   clearInterval(window.bgmFadeTimer);
-  const startVol = window.bgmPlayer.volume;
-  const diff = targetVol - startVol;
+  var startVol = window.bgmPlayer.volume;
+  var diff = targetVol - startVol;
   if (diff === 0 || duration <= 0) {
     window.bgmPlayer.volume = targetVol;
     if (callback) callback();
     return;
   }
-  const interval = 50;
-  const steps = duration / interval;
-  const stepVol = diff / steps;
-  let currentStep = 0;
+  var interval = 50;
+  var steps = duration / interval;
+  var stepVol = diff / steps;
+  var currentStep = 0;
 
   window.bgmFadeTimer = setInterval(function() {
     currentStep++;
-    let newVol = startVol + stepVol * currentStep;
+    var newVol = startVol + stepVol * currentStep;
     newVol = Math.max(0, Math.min(1, newVol));
     window.bgmPlayer.volume = newVol;
 
@@ -44,25 +42,24 @@ window._fadeAudio = function(targetVol, duration, callback) {
   }, interval);
 };
 
-// 播放音樂（支援群組區間控制，預設淡入 2000 毫秒，預設音量 0.25）
-window.playBGM = function(src, groupName = "default", fadeTime = 2000, maxVol = 0.35) {
-  window.passageBgmTriggered = true; // 標記當前進入的段落有設定音樂
-  window.currentBgmGroup = groupName;
+window.playBGM = function(src, fadeTime, maxVol) {
+  fadeTime = fadeTime || 2000;
+  maxVol = (maxVol !== undefined) ? maxVol : 0.25;
+  window.passageBgmTriggered = true;
 
-  // 若已經在播放同一首歌，就不重頭播放，確保音量維持在目標值即可
   if (window.bgmPlayer.getAttribute('data-src') === src && !window.bgmPlayer.paused) {
     window._fadeAudio(maxVol, fadeTime);
     return;
   }
 
-  const startNewTrack = function() {
+  var startNewTrack = function() {
     window.bgmPlayer.src = src;
     window.bgmPlayer.setAttribute('data-src', src);
     window.bgmPlayer.volume = 0;
     window.bgmPlayer.play().then(function() {
       window._fadeAudio(maxVol, fadeTime);
     }).catch(function(e) {
-      console.log("等待使用者互動後才能播放音樂:", e);
+      console.log(e);
     });
   };
 
@@ -76,9 +73,8 @@ window.playBGM = function(src, groupName = "default", fadeTime = 2000, maxVol = 
   }
 };
 
-// 停止音樂（預設淡出 1500 毫秒）
-window.stopBGM = function(fadeTime = 1500) {
-  window.currentBgmGroup = null;
+window.stopBGM = function(fadeTime) {
+  fadeTime = fadeTime || 1500;
   if (!window.bgmPlayer.paused) {
     window._fadeAudio(0, fadeTime, function() {
       window.bgmPlayer.pause();
@@ -88,21 +84,17 @@ window.stopBGM = function(fadeTime = 1500) {
   }
 };
 
-// 核心偵測：每次玩家點擊連結切換段落（含向前回看或瀏覽器上一頁）時自動檢查
-const checkPassageMusic = function() {
+var checkPassageMusic = function() {
   window.passageBgmTriggered = false;
-  // 給新段落 100 毫秒載入並執行內部的 playBGM
   setTimeout(function() {
-    // 如果新進入的段落完全沒有呼叫 playBGM，代表已經離開指定播放範圍，自動淡出停止！
     if (!window.passageBgmTriggered && !window.bgmPlayer.paused) {
       window.stopBGM(1500);
     }
   }, 100);
 };
 
-// 監聽段落跳轉連結與瀏覽器返回按鈕（支援 Harlowe 預設的回看功能）
 document.addEventListener('click', function(e) {
-  const isNavClick = e.target.closest('tw-link, a.link-internal, [data-passage], tw-icon[alt="Undo"], #history-backward');
+  var isNavClick = e.target.closest('tw-link, a.link-internal, [data-passage], tw-icon[alt="Undo"], #history-backward');
   if (isNavClick) {
     checkPassageMusic();
   }
@@ -132,9 +124,7 @@ window.addEventListener('popstate', checkPassageMusic);
 「等等所以旁邊那個是溫迪嗎？」
 「真成溫迪戈了喔。」
 「不是 他是三小攻擊我幹嘛？」
-[[下一段-&gt;第二段]]</tw-passagedata><tw-passagedata pid="3" name="第二段" tags="" position="900,600" size="100,100">&lt;script&gt;
-window.playBGM(&quot;gojotheme.mp3&quot;, &quot;kokkolo);
-&lt;/script&gt;
+[[下一段-&gt;第二段]]</tw-passagedata><tw-passagedata pid="3" name="第二段" tags="" position="900,600" size="100,100">&lt;script&gt;window.playBGM(&#39;gojotheme.mp3&#39;);&lt;/script&gt;
 當黑紅還在碎碎念時科科洛手抬了起來 並且彈出對話框。
 科科洛：[術式順轉 蒼]
 瞬間藍色的能量球出現開始將黑紅吸引過去。
@@ -168,9 +158,7 @@ window.playBGM(&quot;gojotheme.mp3&quot;, &quot;kokkolo);
 「你他媽三小啦！」
 白蛇：「但我的能力被限制了。」
 「我只剩不死鳥的加護跟續·不死鳥的加護能跟原作一樣無限接續開。」
-[[下一段-&gt;第三段]]</tw-passagedata><tw-passagedata pid="4" name="第三段" tags="" position="900,725" size="100,100">&lt;script&gt;
-window.playBGM(&quot;gojotheme.mp3&quot;, &quot;kokkolo);
-&lt;/script&gt;
+[[下一段-&gt;第三段]]</tw-passagedata><tw-passagedata pid="4" name="第三段" tags="" position="900,725" size="100,100">&lt;script&gt;window.playBGM(&#39;gojotheme.mp3&#39;);&lt;/script&gt;
 「其他的全部都被削了。」
 「現在其他的能力都要等級才能提高使用時間跟減少冷卻時間根持續時間。」
 黑紅聽到後愣了一下 然後認真的說。
@@ -202,9 +190,7 @@ window.playBGM(&quot;gojotheme.mp3&quot;, &quot;kokkolo);
 白蛇：「你問我我問誰啊！」
 「ㄟ 不對啊。」
 「我本來就力大磚飛！」
-[[下一段-&gt;第四段]]</tw-passagedata><tw-passagedata pid="5" name="第四段" tags="" position="900,850" size="100,100">&lt;script&gt;
-window.playBGM(&quot;gojotheme.mp3&quot;, &quot;kokkolo);
-&lt;/script&gt;
+[[下一段-&gt;第四段]]</tw-passagedata><tw-passagedata pid="5" name="第四段" tags="" position="900,850" size="100,100">&lt;script&gt;window.playBGM(&#39;gojotheme.mp3&#39;);&lt;/script&gt;
 說完溫迪跳了過來。
 而白蛇一拳將溫迪打飛沿途將至少十棵樹撞斷然後昏過去了。
 黑紅看了一眼呆滯隨後說。
@@ -232,9 +218,7 @@ window.playBGM(&quot;gojotheme.mp3&quot;, &quot;kokkolo);
 白蛇：「HOLY….。」
 白蛇被消沒了但又馬上復活。
 白蛇：「你他媽的黑....！」
-[[下一段-&gt;第五段]]</tw-passagedata><tw-passagedata pid="6" name="第五段" tags="" position="900,975" size="100,100">&lt;script&gt;
-window.playBGM(&quot;gojotheme.mp3&quot;, &quot;kokkolo);
-&lt;/script&gt;
+[[下一段-&gt;第五段]]</tw-passagedata><tw-passagedata pid="6" name="第五段" tags="" position="900,975" size="100,100">&lt;script&gt;window.playBGM(&#39;gojotheme.mp3&#39;);&lt;/script&gt;
 沒說完又被一發虛式 茈幹沒又復活。
 白蛇：「紅！」
 說完又被一發虛式 茈幹沒又復活。
@@ -261,9 +245,7 @@ window.playBGM(&quot;gojotheme.mp3&quot;, &quot;kokkolo);
 說完衝回到白蛇所在的附近。
 而此時的白蛇已經死了至少十幾次了。
 當白蛇看到黑紅的那一刻十分的憤怒。
-[[下一段-&gt;第六段]]</tw-passagedata><tw-passagedata pid="7" name="第六段" tags="" position="900,1100" size="100,100">&lt;script&gt;
-window.playBGM(&quot;gojotheme.mp3&quot;, &quot;kokkolo);
-&lt;/script&gt;
+[[下一段-&gt;第六段]]</tw-passagedata><tw-passagedata pid="7" name="第六段" tags="" position="900,1100" size="100,100">&lt;script&gt;window.playBGM(&#39;gojotheme.mp3&#39;);&lt;/script&gt;
 白蛇：「你他媽的死王八蛋！」
 「你害我在這邊被虐又復活至少十次以上了！」
 黑紅用喊的說。
